@@ -1,0 +1,6 @@
+{
+  "name": "Hands-Free AI Canvas",
+  "description": "Voice-controlled AI drawing assistant",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
