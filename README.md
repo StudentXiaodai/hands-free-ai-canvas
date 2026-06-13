@@ -8,7 +8,7 @@
 
 ## 项目演示视频
 
-<video src="https://github.com/StudentXiaodai/hands-free-ai-canvas/releases/download/v1.0.0/项目简介.mp4" controls width="100%"></video>
+<video src="https://github.com/StudentXiaodai/hands-free-ai-canvas/releases/download/v1.0.0/default.mp4" controls width="100%"></video>
 
 > 如果视频无法播放，请访问 [GitHub Releases](https://github.com/StudentXiaodai/hands-free-ai-canvas/releases) 下载观看。
 
