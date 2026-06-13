@@ -23,10 +23,15 @@ export function useAgentAssistant() {
   const stateRef = useRef<AssistantState>("IDLE");
   const processingRef = useRef<boolean>(false);
   const speakingRef = useRef<boolean>(false);
+  const ratioRef = useRef<string>("1:1"); // 跟踪最新的宽高比，避免闭包捕获旧值
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    ratioRef.current = ratio; // 每次 ratio 变化时更新 ref
+  }, [ratio]);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -99,10 +104,19 @@ export function useAgentAssistant() {
       };
 
       recognition.onend = () => {
-        // Continuous mode might end, try to restart if it drops and we want it still active
-        // But for safety, let's keep it simple:
-        if (state === "LISTENING" || state === "IDLE") {
-             // Let the user manually start it, or auto restart
+        // continuous模式可能会意外停止，空闲时自动重启，保证持续监听
+        if (stateRef.current === "IDLE" || stateRef.current === "LISTENING") {
+          // 用 setTimeout 避免立即重启时因浏览器限制导致的循环调用
+          setTimeout(() => {
+            if (recognitionRef.current && !speakingRef.current && !processingRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (e) {
+                // 识别可能已经在运行中，忽略此错误
+                console.warn("语音识别重启失败:", e);
+              }
+            }
+          }, 500);
         }
       };
 
@@ -154,8 +168,20 @@ export function useAgentAssistant() {
           speakClarification("正在为您保存画作");
           break;
         case "SYSTEM_RATIO":
-          if (data.ratio) setRatio(data.ratio);
-          speakClarification(`已切换比例到${data.ratio}`);
+          if (data.ratio) {
+            setRatio(data.ratio);
+            ratioRef.current = data.ratio;  // 立即更新 ref，避免闭包问题
+            // 如果当前已有生成的图片，切换比例后自动重新生成
+            if (currentPrompt && currentImageUrl) {
+              setState("GENERATING");
+              speakClarification(`已切换比例到${data.ratio}，正在为您重新生成`);
+              await generateImage(currentPrompt, data.ratio);
+            } else {
+              speakClarification(`已切换比例到${data.ratio}`);
+            }
+          } else {
+            speakClarification("比例切换失败");
+          }
           break;
         case "CLARIFY":
           setState("CLARIFYING");
@@ -168,7 +194,8 @@ export function useAgentAssistant() {
         case "GENERATE":
           setState("GENERATING");
           setCurrentPrompt(data.new_prompt || "");
-          await generateImage(data.new_prompt || "", data.ratio || "1:1");
+          // 使用 ratioRef.current 确保传递最新的宽高比，避免闭包捕获旧值
+          await generateImage(data.new_prompt || "", ratioRef.current);
           break;
         default:
           setState("IDLE");

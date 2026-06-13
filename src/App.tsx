@@ -145,7 +145,7 @@ export default function App() {
           <div className="flex flex-col items-center gap-4 w-full">
             <button 
               onClick={handleStart}
-              className="px-8 py-3.5 bg-gradient-to-r from-blue-500 to-sky-500 text-white text-xs font-extrabold rounded-full uppercase tracking-widest hover:from-blue-400 hover:to-sky-400 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-blue-500/30 w-fit cursor-pointer"
+              className="px-8 py-3.5 bg-blue-500 text-white text-xs font-semibold rounded-full uppercase tracking-wider hover:bg-blue-600 active:scale-[0.98] transition-colors duration-200 w-fit cursor-pointer"
             >
               开启纯语音绘图体验
             </button>
@@ -303,14 +303,19 @@ export default function App() {
 
             {/* Generated Image Container */}
             {currentImageUrl && (
-              <div id="art-canvas-container" className={`relative rounded-3xl overflow-hidden shadow-[0_10px_40px_rgba(59,130,246,0.2)] border border-blue-100 transition-all duration-700 max-h-[64vh] bg-white flex items-center justify-center ${state === "GENERATING" ? "scale-95 opacity-20 blur-md" : "scale-100 opacity-100"}`}>
-                
+              <div id="art-canvas-container" className={`relative rounded-3xl overflow-hidden shadow-[0_10px_40px_rgba(59,130,246,0.2)] border border-blue-100 transition-all duration-700 bg-white flex items-center justify-center ${state === "GENERATING" ? "scale-95 opacity-20 blur-md" : "scale-100 opacity-100"}`} style={{ 
+                // 根据当前比例动态设置容器宽高比：16:9 是宽屏，9:16 是竖屏，1:1 是正方形
+                aspectRatio: ratio === "16:9" ? "16/9" : ratio === "9:16" ? "9/16" : "1/1",
+                width: ratio === "16:9" ? "min(90vw, 900px)" : ratio === "9:16" ? "min(55vw, 420px)" : "min(60vh, 520px)",
+                maxHeight: "72vh"
+              }}>
+
                 {/* The Masterpiece */}
-                <img 
+                <img
                   id="final-rendered-art"
-                  src={currentImageUrl} 
-                  className="object-contain max-h-[60vh] max-w-full rounded-2xl select-none" 
-                  alt="Speech Generated Art" 
+                  src={currentImageUrl}
+                  className="w-full h-full object-cover rounded-2xl select-none"
+                  alt="Speech Generated Art"
                 />
 
                 {/* Info badge overlays */}

@@ -106,10 +106,30 @@ async function startServer() {
 
   app.post("/api/generate-image", async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, aspectR } = req.body;
       if (!prompt) {
         return res.status(400).json({ error: "No prompt provided" });
       }
+
+      // 根据宽高比调整提示词并计算图片尺寸
+      // 注意：图片生成 API 只支持标准尺寸。1792x1024 ≈ 16:9，1024x1792 ≈ 9:16
+      const ratio = aspectR || "1:1";
+      let ratioPrompt = "";
+      let imageSize = "1024x1024";  // 默认 1:1 正方形
+
+      if (ratio === "16:9") {
+        ratioPrompt = " (wide landscape format, 16:9 aspect ratio, cinematic composition)";
+        imageSize = "1792x1024";      // 16:9 的标准横屏尺寸
+      } else if (ratio === "9:16") {
+        ratioPrompt = " (vertical portrait format, 9:16 aspect ratio, mobile-friendly composition)";
+        imageSize = "1024x1792";      // 9:16 的标准竖屏尺寸
+      } else {
+        ratioPrompt = " (square format, 1:1 aspect ratio, balanced composition)";
+        imageSize = "1024x1024";      // 1:1 正方形
+      }
+
+      const enhancedPrompt = prompt + ratioPrompt;
+      console.log(`[Image Gen] 请求参数: prompt="${prompt.slice(0,50)}...", aspectR=${aspectR}, size=${imageSize}`);
 
       let aiClient;
       try {
@@ -123,32 +143,11 @@ async function startServer() {
           return res.status(500).json({ error: "Missing Endpoint", message: "您需要配置 VOLC_ENDPOINT_IMAGE" });
       }
 
-      // Instead of raw images API, Volcengine docs indicate their OpenAI compatible endpoint
-      // actually doesn't fully support `openai.images.generate` in all SDK versions seamlessly
-      // due to some payload differences. We perform a raw fetch for standard compatibility or use SDK.
-      // Let's perform a raw fetch to be 100% safe with Volcengine ARK CV endpoints for images.
-      
-      const fetchResp = await fetch("https://ark.cn-beijing.volces.com/api/v3/bots/chat/completions", {
-         // this is for chat, wait... actually, Volcengine's Seedream text-to-image is usually called through the CV API,
-         // but if it's placed in ARK with an `ep-` ID, it acts like a chat completion that returns an image or 
-         // through standard image generations endpoint. Let's use standard image generations api via fetch.
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.VOLC_ARK_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: endpoint,
-          prompt: prompt
-        })
-      });
-
-      // Oh wait! The URL for image generation in OpenAI compatible API is usually /v3/images/generations
-      // Let's use openaiClient.images.generate
       const response = await aiClient.images.generate({
           model: endpoint,
-          prompt: prompt,
+          prompt: enhancedPrompt,
           n: 1,
+          size: imageSize,  // 关键修复：传递 size 参数控制输出图片尺寸
       });
 
       const imageUrl = response.data[0].url;
@@ -156,11 +155,24 @@ async function startServer() {
 
     } catch (err: any) {
       console.error("Error generating image:", err);
-      // Wait, if it fails, maybe the endpoint is not set up correctly. Let's fallback to free placeholder
-      // so the app still works if the image endpoint is misconfigured.
+      // 如果主API失败，使用备用的 pollinations.ai 服务
       console.log("Falling back to pollination");
       const randomSeed = Math.floor(Math.random() * 1000000);
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(String(prompt))}?nologo=true&seed=${randomSeed}`;
+
+      // 注意：aspectR 和 prompt 在 try 块内声明，catch 中需从 req.body 重新读取
+      const fallbackRatio = req.body?.aspectR || "1:1";
+      const fallbackPrompt = req.body?.prompt || "";
+
+      // 根据宽高比设置图片尺寸（备用路径 pollinations）
+      let width = 1024, height = 1024;
+      if (fallbackRatio === "16:9") {
+        width = 1792; height = 1024;
+      } else if (fallbackRatio === "9:16") {
+        width = 1024; height = 1792;
+      }
+      console.log(`[Image Gen] 主API失败，使用备用路径: ${width}x${height}`);
+
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(String(fallbackPrompt))}?width=${width}&height=${height}&nologo=true&seed=${randomSeed}`;
       res.json({ url });
     }
   });
