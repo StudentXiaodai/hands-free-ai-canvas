@@ -10,7 +10,9 @@
 
 <video src="https://github.com/StudentXiaodai/hands-free-ai-canvas/releases/download/v1.0.0/default.mp4" controls width="100%"></video>
 
-> 如果视频无法播放，请访问 [GitHub Releases](https://github.com/StudentXiaodai/hands-free-ai-canvas/releases) 下载观看。
+> 如果视频无法播放，可前往以下链接观看：
+> - [GitHub Releases 下载观看](https://github.com/StudentXiaodai/hands-free-ai-canvas/releases)
+> - [B 站在线观看](https://www.bilibili.com/video/BV1icJp6zEFM/?vd_source=067afcac7c4ae61bbc057e2f325e1e22)
 
 ## 本地启动与部署指南
 
