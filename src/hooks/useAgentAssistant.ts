@@ -77,9 +77,24 @@ export function useAgentAssistant() {
 
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error", event.error);
+        // 处理各种错误类型
         if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'not-allowed') {
-           // Return to idle
            setState("IDLE");
+        } else if (event.error === 'network') {
+           // 网络错误：可能是断网或防火墙阻止
+           console.warn("网络错误：语音识别服务无法连接，请检查网络连接");
+           setState("IDLE");
+           // 可选：延迟后自动重试
+           setTimeout(() => {
+             if (stateRef.current === "IDLE" && recognitionRef.current) {
+               console.log("尝试重新启动语音识别...");
+               try {
+                 recognitionRef.current.start();
+               } catch(e) {
+                 console.warn("重启失败:", e);
+               }
+             }
+           }, 3000);
         }
       };
 
@@ -237,11 +252,13 @@ export function useAgentAssistant() {
     if (recognitionRef.current) {
         try {
             recognitionRef.current.start();
+            console.log("语音识别已启动，请说话...");
         } catch(e) {
-            console.warn("Already started");
+            console.warn("语音识别已在运行中");
         }
     } else {
-        alert("Your browser does not support Speech Recognition.");
+      console.warn("浏览器不支持语音识别");
+      speakClarification("您的浏览器不支持语音识别");
     }
   }, []);
 
