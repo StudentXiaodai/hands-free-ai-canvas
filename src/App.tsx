@@ -29,7 +29,8 @@ export default function App() {
     ratio, 
     transcriptDisplay, 
     startListening, 
-    processTranscript 
+    processTranscript,
+    downloadImage 
   } = useAgentAssistant();
   
   const [started, setStarted] = useState(false);
@@ -285,6 +286,20 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* 保存图片按钮：只有当有图片时才能点击 */}
+          <button
+            onClick={downloadImage}
+            disabled={!currentImageUrl}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              currentImageUrl
+                ? "bg-blue-500 text-white hover:bg-blue-600 active:scale-95 cursor-pointer shadow-md shadow-blue-500/30"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+            }`}
+          >
+            <Download size={14} />
+            <span>{currentImageUrl ? "保存图片" : "暂无图片"}</span>
+          </button>
 
           <div className="text-[10px] text-slate-500 border-t border-blue-100 pt-4 font-mono flex items-center gap-1">
             <Info size={10} /> Powered via Volcengine v3 SDK

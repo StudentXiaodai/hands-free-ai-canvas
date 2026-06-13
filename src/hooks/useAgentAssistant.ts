@@ -164,8 +164,13 @@ export function useAgentAssistant() {
           speakClarification("已清空画布");
           break;
         case "SYSTEM_SAVE":
-          downloadImage();
-          speakClarification("正在为您保存画作");
+          // 先判断是否有图片，避免 downloadImage 和后续语音同时播报造成冲突
+          if (!currentImageUrl) {
+            speakClarification("当前没有可保存的图片");
+          } else {
+            speakClarification("正在为您保存画作");
+            downloadImage();
+          }
           break;
         case "SYSTEM_RATIO":
           if (data.ratio) {
@@ -261,13 +266,13 @@ export function useAgentAssistant() {
     }
   };
 
+  // 下载图片：只负责下载动作本身，不负责播报"有没有图片"的提示
+  // 调用方（按钮或语音指令）负责判断是否有图片并给出相应的语音反馈
   const downloadImage = () => {
     if (!currentImageUrl) {
-      speakClarification("当前没有可保存的图片");
       return;
     }
-    
-    // 方法1：尝试 fetch + blob 方式（适用于同源或支持 CORS 的图片）
+
     fetch(currentImageUrl, { mode: 'cors' })
       .then(res => {
         if (!res.ok) throw new Error('网络响应失败');
@@ -286,8 +291,6 @@ export function useAgentAssistant() {
       })
       .catch(err => {
         console.warn("fetch 方式下载失败，尝试直接打开图片:", err);
-        // 方法2：如果 fetch 失败（如 CORS 限制），直接在新标签页打开图片
-        // 用户可以右键保存图片
         window.open(currentImageUrl, '_blank');
         speakClarification("已在新标签页打开图片，请右键保存");
       });
@@ -314,5 +317,6 @@ export function useAgentAssistant() {
     transcriptDisplay,
     startListening,
     processTranscript, // Exposed for manual dev triggering
+    downloadImage,     // 暴露下载图片方法供 UI 调用
   };
 }
