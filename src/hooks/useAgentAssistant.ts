@@ -262,16 +262,34 @@ export function useAgentAssistant() {
   };
 
   const downloadImage = () => {
-    if (!currentImageUrl) return;
-    fetch(currentImageUrl)
-      .then(res => res.blob())
+    if (!currentImageUrl) {
+      speakClarification("当前没有可保存的图片");
+      return;
+    }
+    
+    // 方法1：尝试 fetch + blob 方式（适用于同源或支持 CORS 的图片）
+    fetch(currentImageUrl, { mode: 'cors' })
+      .then(res => {
+        if (!res.ok) throw new Error('网络响应失败');
+        return res.blob();
+      })
       .then(blob => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = `xiaodou_art_${Date.now()}.png`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+        console.log("图片保存成功");
+      })
+      .catch(err => {
+        console.warn("fetch 方式下载失败，尝试直接打开图片:", err);
+        // 方法2：如果 fetch 失败（如 CORS 限制），直接在新标签页打开图片
+        // 用户可以右键保存图片
+        window.open(currentImageUrl, '_blank');
+        speakClarification("已在新标签页打开图片，请右键保存");
       });
   };
 

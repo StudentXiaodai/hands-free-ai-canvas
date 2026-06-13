@@ -112,20 +112,21 @@ async function startServer() {
       }
 
       // 根据宽高比调整提示词并计算图片尺寸
-      // 注意：图片生成 API 只支持标准尺寸。1792x1024 ≈ 16:9，1024x1792 ≈ 9:16
+      // 豆包 API 要求图片总像素 ≥ 3,686,400，因此各比例尺寸需满足此下限
+      // 16:9 → 2560×1440 = 3,686,400  9:16 → 1440×2560  1:1 → 1920×1920
       const ratio = aspectR || "1:1";
       let ratioPrompt = "";
-      let imageSize = "1024x1024";  // 默认 1:1 正方形
+      let imageSize = "1920x1920";  // 默认 1:1 正方形（满足最低像素要求）
 
       if (ratio === "16:9") {
         ratioPrompt = " (wide landscape format, 16:9 aspect ratio, cinematic composition)";
-        imageSize = "1792x1024";      // 16:9 的标准横屏尺寸
+        imageSize = "2560x1440";      // 16:9 横屏，像素 = 3,686,400
       } else if (ratio === "9:16") {
         ratioPrompt = " (vertical portrait format, 9:16 aspect ratio, mobile-friendly composition)";
-        imageSize = "1024x1792";      // 9:16 的标准竖屏尺寸
+        imageSize = "1440x2560";      // 9:16 竖屏，像素 = 3,686,400
       } else {
         ratioPrompt = " (square format, 1:1 aspect ratio, balanced composition)";
-        imageSize = "1024x1024";      // 1:1 正方形
+        imageSize = "1920x1920";      // 1:1 正方形，像素 = 3,686,400
       }
 
       const enhancedPrompt = prompt + ratioPrompt;
